@@ -117,9 +117,23 @@ private String frontendUrl;
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(
-            List.of("https://parkease-frontend-three.vercel.app/", frontendUrl)
-        );
+        List<String> allowedOrigins = new java.util.ArrayList<>(List.of(
+            "https://parkease-frontend-three.vercel.app",
+            "https://parkease-frontend-three.vercel.app/",
+            "http://localhost:5173",
+            "http://localhost:3000"
+        ));
+        if (frontendUrl != null && !frontendUrl.isBlank()) {
+            String trimmed = frontendUrl.trim();
+            if (!allowedOrigins.contains(trimmed)) {
+                allowedOrigins.add(trimmed);
+            }
+            String noSlash = trimmed.replaceAll("/+$", "");
+            if (!allowedOrigins.contains(noSlash)) {
+                allowedOrigins.add(noSlash);
+            }
+        }
+        configuration.setAllowedOrigins(allowedOrigins);
 
         configuration.setAllowedMethods(
             List.of(
