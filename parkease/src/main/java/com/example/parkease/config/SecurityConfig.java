@@ -118,7 +118,7 @@ private String frontendUrl;
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-            List.of("http://localhost:5173", frontendUrl)
+            List.of("https://parkease-frontend-three.vercel.app/", frontendUrl)
         );
 
         configuration.setAllowedMethods(
