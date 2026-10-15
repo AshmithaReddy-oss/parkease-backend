@@ -75,19 +75,29 @@ private String frontendUrl;
                 cors.configurationSource(corsConfigurationSource())
             )
             .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .sessionManagement(session ->
                 session.sessionCreationPolicy(
                     SessionCreationPolicy.STATELESS
                 )
             )
             .authorizeHttpRequests(auth -> auth
+                // Allow OPTIONS preflight requests globally
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Public authentication endpoints
+                // Public authentication and health endpoints
                 .requestMatchers(
+                    "/",
+                    "/health",
+                    "/api/health",
                     "/api/auth/**",
-                    "/students/register",
-                    "/error"
+                    "/error",
+                    "/h2-console/**"
                 ).permitAll()
+
+                // Allow public read-only browsing of parking lots and slots
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/parking-lots/**", "/api/slots/**")
+                    .permitAll()
 
                 // Role-based access control
                 .requestMatchers("/api/admin/**")
@@ -111,54 +121,23 @@ private String frontendUrl;
         return http.build();
     }
 
-    // Allow requests from the React development server
+    // Allow requests from frontend deployments and localhost
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> allowedOrigins = new java.util.ArrayList<>(List.of(
-            "https://parkease-frontend-three.vercel.app",
-            "https://parkease-frontend-three.vercel.app/",
-            "http://localhost:5173",
-            "http://localhost:3000"
-        ));
-        if (frontendUrl != null && !frontendUrl.isBlank()) {
-            String trimmed = frontendUrl.trim();
-            if (!allowedOrigins.contains(trimmed)) {
-                allowedOrigins.add(trimmed);
-            }
-            String noSlash = trimmed.replaceAll("/+$", "");
-            if (!allowedOrigins.contains(noSlash)) {
-                allowedOrigins.add(noSlash);
-            }
-        }
-        configuration.setAllowedOrigins(allowedOrigins);
-
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(
-            List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS"
-            )
+            List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
         );
-
-        configuration.setAllowedHeaders(
-            List.of("*")
-        );
-
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration(
-            "/**",
-            configuration
-        );
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
